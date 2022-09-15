@@ -1,0 +1,92 @@
+experiment: baseline
+
+datamodule:
+  _target_: datasets.tagging.DummyTaggingDataModule
+  sample_rate: 22050
+  input_length: 4.54
+  batch_size: 2
+  n_workers: 2
+  pin_memory: false
+
+features:
+  _target_: torchaudio.transforms.MelSpectrogram
+  sample_rate: 22050
+  n_fft: 1024
+  hop_length: 512
+  n_mels: 128
+
+fe_model:
+  _target_: networks.Res2DMaxPoolModule
+  in_channels: 1
+  out_channels: 128
+  pooling: [1, 4]
+
+net:
+  _target_: networks.SpecTNT
+  n_channels: 128
+  n_frequencies: 128
+  n_times: 49
+  embed_dim: 128
+  spectral_dmodel: 96
+  spectral_nheads: 4
+  spectral_dimff: 96
+  temporal_dmodel: 96
+  temporal_nheads: 8
+  temporal_dimff: 96
+  dropout: 0.15
+  n_blocks: 3
+  use_tct: true
+  n_classes: 50
+
+model:
+  _target_: models.tagging.MusicTagger
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  fast_dev_run: false  # for debugging
+  gpus:
+    - 3
+  precision: 32
+  accumulate_grad_batches: 1
+  check_val_every_n_epoch: 10
+  max_steps: 1000000
+
+criterion:
+  _target_: torch.nn.CrossEntropyLoss
+  weight: null
+
+callbacks:
+  lr_monitor:
+    _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: epoch
+
+optim:
+  _target_: torch.optim.AdamW
+  betas:
+    - 0.9
+    - 0.999
+  lr: 0.0005
+  weight_decay: 0.005
+
+model_checkpoint:
+  _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  dirpath: checkpoints/
+  filename: "{best_epoch:02d}"
+  monitor: val_loss
+  mode: min
+  save_last: true
+  save_top_k: 1
+  verbose: true
+
+logger:
+  _target_: pytorch_lightning.loggers.tensorboard.TensorBoardLogger
+  name: ""
+  save_dir: ${now:%Y-%m-%d}_${now:%H-%M-%S}/tensorboard/
+  default_hp_metric: false
+
+hydra:
+  run:
+    dir: runs/opensource/tagging/${experiment}
+
+ignore_warning: True
+seed: 42
