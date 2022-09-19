@@ -30,12 +30,15 @@ class Res2DMaxPoolModule(nn.Module):
 
 
 class ResFrontEnd(nn.Module):
-    def __init__(self, in_channels, out_channels):
+    def __init__(self, in_channels, out_channels, freq_pooling, time_pooling):
         super(ResFrontEnd, self).__init__()
         self.input_bn = nn.BatchNorm2d(in_channels)
-        self.layer1 = Res2DMaxPoolModule(in_channels, out_channels, pooling=(2, 2))
-        self.layer2 = Res2DMaxPoolModule(out_channels, out_channels, pooling=(2, 2))
-        self.layer3 = Res2DMaxPoolModule(out_channels, out_channels, pooling=(2, 1))
+        self.layer1 = Res2DMaxPoolModule(
+            in_channels, out_channels, pooling=(freq_pooling[0], time_pooling[0]))
+        self.layer2 = Res2DMaxPoolModule(
+            out_channels, out_channels, pooling=(freq_pooling[1], time_pooling[1]))
+        self.layer3 = Res2DMaxPoolModule(
+            out_channels, out_channels, pooling=(freq_pooling[2], time_pooling[2]))
 
     def forward(self, hcqt):
         """
@@ -100,8 +103,9 @@ class SpecTNTBlock(nn.Module):
             spec_out: spectral embedding output [B, T, F+1, K]
             temp_out: temporal embedding output [B, T, 1, D]
         """
-        # Element-wise addition with TE
-        spec_in = spec_in + self.D_to_K(temp_in)
+        # Element-wise addition between TE and FCT
+        spec_in = spec_in + \
+            nn.functional.pad(self.D_to_K(temp_in), (0, 0, 0, self.F))
 
         # Spectral Transformer
         spec_in = spec_in.flatten(0, 1).transpose(1, 2)  # [B*T, K, F+1]
@@ -208,7 +212,7 @@ class SpecTNTModule(nn.Module):
 
 class SpecTNT(nn.Module):
     def __init__(
-        self, front_end_model,
+        self, fe_model,
         n_channels, n_frequencies, n_times,
         spectral_dmodel, spectral_nheads, spectral_dimff,
         temporal_dmodel, temporal_nheads, temporal_dimff,
@@ -220,7 +224,7 @@ class SpecTNT(nn.Module):
         self.use_tct = use_tct
 
         # Front-end model
-        self.fe_model = front_end_model
+        self.fe_model = fe_model
 
         # Main model
         self.main_model = SpecTNTModule(

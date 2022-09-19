@@ -12,6 +12,9 @@ class BeatEstimator(BaseModel):
             criterion,
             datamodule
         )
+        
+        self.fps = datamodule.sample_rate / \
+            (datamodule.hop_length * datamodule.time_shrinking)
 
     def training_step(self, batch, batch_idx):
         losses = {}

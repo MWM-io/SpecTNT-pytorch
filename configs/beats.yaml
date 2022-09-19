@@ -7,7 +7,8 @@ datamodule:
   pin_memory: False
   sample_rate: 16000
   input_length: 5
-  preprocess_downsample: 1024
+  hop_length: 256
+  time_shrinking: 4
 
 features:
   _target_: harmonicstft.HarmonicSTFT
@@ -16,12 +17,14 @@ features:
   n_harmonic: 6
   semitone_scale: 2
   learn_bw: "only_Q"
-  checkpoint: "/home/pierrecournut/code/projects/beat-estimation-spectnt/weights/harmonicstft.pth"
+  # checkpoint: "/home/pierrecournut/code/projects/beat-estimation-spectnt/weights/harmonicstft.pth"
 
 fe_model:
   _target_: networks.ResFrontEnd
   in_channels: 6
   out_channels: 256
+  freq_pooling: [2, 2, 2]
+  time_pooling: [2, 2, 1]
 
 net:
   _target_: networks.SpecTNT
@@ -47,7 +50,7 @@ trainer:
   _target_: pytorch_lightning.Trainer
   fast_dev_run: false  # for debugging
   gpus:
-    - 3
+    - 0
   precision: 32
   accumulate_grad_batches: 16
   check_val_every_n_epoch: 5

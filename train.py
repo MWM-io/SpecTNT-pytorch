@@ -3,7 +3,7 @@ import hydra.utils as hu
 import pytorch_lightning as pl
 
 
-@hydra.main(config_path="configs/", config_name="tagging")
+@hydra.main(config_path="configs/", config_name="beats")
 def main(cfg):
     if "seed" in cfg:
         pl.seed_everything(cfg.seed)
@@ -12,7 +12,7 @@ def main(cfg):
     fe_model = hu.instantiate(cfg.fe_model)
     net = hu.instantiate(
         cfg.net,
-        front_end_model=fe_model
+        fe_model=fe_model
     )
     optimizer = hu.instantiate(cfg.optim, params=net.parameters())
     lr_scheduler = hu.instantiate(

@@ -5,12 +5,12 @@ import pytorch_lightning as pl
 
 class DummyBeatDataset(tud.Dataset):
 
-    def __init__(self, sample_rate, input_length, preprocess_downsample, mode):
+    def __init__(self, sample_rate, input_length, hop_length, time_shrinking, mode):
         self.sample_rate = sample_rate
         self.input_length = input_length
-        self.preprocess_downsample = preprocess_downsample
-        self.n_frames = (self.sample_rate *
-                         self.input_length) // self.preprocess_downsample
+
+        self.fps = sample_rate / (hop_length * time_shrinking)
+        self.n_frames = int(input_length * self.fps)
 
         assert mode in ["train", "validation", "test"]
         self.mode = mode
@@ -39,31 +39,35 @@ class DummyBeatDataset(tud.Dataset):
 
 
 class DummyBeatDataModule(pl.LightningDataModule):
-    def __init__(self, batch_size, n_workers, pin_memory, sample_rate, input_length, preprocess_downsample):
+    def __init__(self, batch_size, n_workers, pin_memory, sample_rate, input_length, hop_length, time_shrinking):
         self.batch_size = batch_size
         self.n_workers = n_workers
         self.pin_memory = pin_memory
         self.sample_rate = sample_rate
         self.input_length = input_length
-        self.preprocess_downsample = preprocess_downsample
+        self.hop_length = hop_length
+        self.time_shrinking = time_shrinking
 
     def setup(self, stage):
         self.train_set = DummyBeatDataset(
             self.sample_rate,
             self.input_length,
-            self.preprocess_downsample,
+            self.hop_length,
+            self.time_shrinking,
             "train"
         )
         self.val_set = DummyBeatDataset(
             self.sample_rate,
             self.input_length,
-            self.preprocess_downsample,
+            self.hop_length,
+            self.time_shrinking,
             "validation"
         )
         self.test_set = DummyBeatDataset(
             self.sample_rate,
             self.input_length,
-            self.preprocess_downsample,
+            self.hop_length,
+            self.time_shrinking,
             "test"
         )
 
