@@ -13,7 +13,7 @@ class BeatEstimator(BaseModel):
             datamodule
         )
         
-        self.fps = datamodule.sample_rate / \
+        self.target_fps = datamodule.sample_rate / \
             (datamodule.hop_length * datamodule.time_shrinking)
 
     def training_step(self, batch, batch_idx):
@@ -28,14 +28,18 @@ class BeatEstimator(BaseModel):
 
     def validation_step(self, batch, batch_idx):
         losses = {}
-        x, y, ref_beats, ref_downbeats = batch['audio'][0], batch[
-            'targets'][0].cpu(), batch['beats'][0].cpu(), batch['downbeats'][0].cpu()
+        audio, targets, ref_beats, ref_downbeats = (
+            batch['audio'][0], 
+            batch['targets'][0].cpu(), 
+            batch['beats'][0].cpu(), 
+            batch['downbeats'][0].cpu()
+        )
         input_length, sample_rate, batch_size = (
             self.datamodule.input_length,
             self.datamodule.sample_rate,
             self.datamodule.batch_size
         )
-        audio_chunks = th.cat([el.unsqueeze(0) for el in x.split(
+        audio_chunks = th.cat([el.unsqueeze(0) for el in audio.split(
             split_size=int(input_length*sample_rate))[:-1]], dim=0)
         # Inference loop
         logits_list, probs_list = th.tensor([]), th.tensor([])
@@ -50,11 +54,11 @@ class BeatEstimator(BaseModel):
                     [probs_list, probs.flatten(end_dim=1).cpu()], dim=0)
         # Postprocessing
         beats_data = probs_list.argmax(dim=1)
-        est_beats = th.where(beats_data == 0)[0] / self.fps
-        est_downbeats = th.where(beats_data == 1)[0] / self.fps
+        est_beats = th.where(beats_data == 0)[0] / self.target_fps
+        est_downbeats = th.where(beats_data == 1)[0] / self.target_fps
         # Eval
         losses['val_loss'] = self.criterion(
-            logits_list, y[:len(logits_list)])
+            logits_list, targets[:len(logits_list)])
         losses['beats_f_measure'] = mir_eval.beat.f_measure(
             ref_beats, est_beats)
         losses['downbeats_f_measure'] = mir_eval.beat.f_measure(

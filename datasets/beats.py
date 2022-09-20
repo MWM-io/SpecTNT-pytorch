@@ -9,8 +9,8 @@ class DummyBeatDataset(tud.Dataset):
         self.sample_rate = sample_rate
         self.input_length = input_length
 
-        self.fps = sample_rate / (hop_length * time_shrinking)
-        self.n_frames = int(input_length * self.fps)
+        self.target_fps = sample_rate / (hop_length * time_shrinking)
+        self.target_nframes = int(input_length * self.target_fps)
 
         assert mode in ["train", "validation", "test"]
         self.mode = mode
@@ -27,12 +27,12 @@ class DummyBeatDataset(tud.Dataset):
         if self.mode == "train":
             return {
                 'audio': th.zeros(self.input_length * self.sample_rate),
-                'targets': th.zeros(self.n_frames, 3)
+                'targets': th.zeros(self.target_nframes, 3)
             }
         elif self.mode in ["validation", "test"]:
             return {
                 'audio': th.zeros(10 * self.input_length * self.sample_rate),
-                'targets': th.zeros(10 * self.n_frames, 3),
+                'targets': th.zeros(10 * self.target_nframes, 3),
                 'beats': th.arange(0, 50, 0.5),
                 'downbeats': th.arange(0, 50, 2.)
             }
