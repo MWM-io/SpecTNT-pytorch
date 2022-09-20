@@ -4,6 +4,7 @@ import pytorch_lightning as pl
 
 
 @hydra.main(config_path="configs/", config_name="beats")
+# @hydra.main(config_path="configs/", config_name="tagging")
 def main(cfg):
     if "seed" in cfg:
         pl.seed_everything(cfg.seed)
