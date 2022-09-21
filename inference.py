@@ -5,10 +5,10 @@ from omegaconf import OmegaConf
 def predict(audio, cfg_path, ckpt_path, activation_fn):
     """
     Args:
-        audio: waveform as a 1D Pytorch tensor
+        audio: waveform as a 1D Pytorch tensor (sample rate: 16kHz for beat estimation and 22kHz for music tagging)
         cfg_path: string indicating config path
         ckpt_path: string indicating checkpoint path
-        activation_fn: activation function, either "softmax" or "sigmoid"
+        activation_fn: activation function, either "softmax" (beat estimation) or "sigmoid" (music tagging)
     
     Return:
         probs_list: list of estimated probability distribution over output classes for each output frame
@@ -27,11 +27,11 @@ def predict(audio, cfg_path, ckpt_path, activation_fn):
     # Load weights
     ckpt = th.load(ckpt_path, map_location="cpu")
     net_state_dict = {k.replace("net.", ""): v for k,
-                      v in ckpt["state_dict"].items() if "feature_extractor" not in k}
+                    v in ckpt["state_dict"].items() if "feature_extractor" not in k}
     net.load_state_dict(net_state_dict)
     _ = net.eval()
     features_state_dict = {k.replace("feature_extractor.", ""): v for k,
-                           v in ckpt["state_dict"].items() if "feature_extractor" in k}
+                        v in ckpt["state_dict"].items() if "feature_extractor" in k}
     feature_extractor.load_state_dict(features_state_dict)
     _ = feature_extractor.eval()
     # Inference loop
