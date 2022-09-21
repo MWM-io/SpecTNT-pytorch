@@ -84,3 +84,10 @@ class DummyBeatDataModule(pl.LightningDataModule):
                               pin_memory=self.pin_memory,
                               shuffle=False,
                               num_workers=self.n_workers)
+
+    def test_dataloader(self):
+        return tud.DataLoader(self.test_set,
+                              batch_size=1,
+                              pin_memory=self.pin_memory,
+                              shuffle=False,
+                              num_workers=self.n_workers)

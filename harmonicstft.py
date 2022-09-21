@@ -41,7 +41,7 @@ def initialize_filterbank(sample_rate, n_harmonic, semitone_scale):
 
 class HarmonicSTFT(nn.Module):
     """
-    Trainable harmonic filters
+    Trainable harmonic filters as implemented by Minz Won.
     
     Paper: https://ccrma.stanford.edu/~urinieto/MARL/publications/ICASSP2020_Won.pdf
     Code: https://github.com/minzwon/data-driven-harmonic-filters

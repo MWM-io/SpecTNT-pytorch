@@ -2,25 +2,41 @@ import torch as th
 import hydra.utils as hu
 from omegaconf import OmegaConf
 
-def load_modules(config_path):
-    cfg = OmegaConf.load(config_path):
-    datamodule = hu.instantiate(cfg.datamodule)
-    _ = datamodule.setup(None)
+def predict(audio, cfg_path, ckpt_path, activation_fn):
+    """
+    Args:
+        audio: waveform as a 1D Pytorch tensor
+        cfg_path: string indicating config path
+        ckpt_path: string indicating checkpoint path
+        activation_fn: activation function, either "softmax" or "sigmoid"
+    
+    Return:
+        probs_list: list of estimated probability distribution over output classes for each output frame
+    """
+    # Load config and params
+    cfg = OmegaConf.load(cfg_path)
+    input_length, sample_rate, batch_size = (
+        cfg.datamodule.input_length,
+        cfg.datamodule.sample_rate,
+        cfg.datamodule.batch_size
+    )
+    # Load modules
     feature_extractor = hu.instantiate(cfg.features)
     fe_model = hu.instantiate(cfg.fe_model)
     net = hu.instantiate(cfg.net, fe_model=fe_model)
-    return datamodule, feature_extractor, net
-
-
-def inference(audio, datamodule, feature_extractor, net, activation_fn):
-    input_length, sample_rate, batch_size = (
-        datamodule.input_length,
-        datamodule.sample_rate,
-        datamodule.batch_size
-    )
+    # Load weights
+    ckpt = th.load(ckpt_path, map_location="cpu")
+    net_state_dict = {k.replace("net.", ""): v for k,
+                      v in ckpt["state_dict"].items() if "feature_extractor" not in k}
+    net.load_state_dict(net_state_dict)
+    _ = net.eval()
+    features_state_dict = {k.replace("feature_extractor.", ""): v for k,
+                           v in ckpt["state_dict"].items() if "feature_extractor" in k}
+    feature_extractor.load_state_dict(features_state_dict)
+    _ = feature_extractor.eval()
+    # Inference loop
     audio_chunks = th.cat([el.unsqueeze(0) for el in audio.split(
         split_size=int(input_length*sample_rate))[:-1]], dim=0)
-    # Inference loop
     probs_list = th.tensor([])
     for batch_audio in audio_chunks.split(batch_size):
         with th.no_grad():
