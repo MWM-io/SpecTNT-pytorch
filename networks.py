@@ -30,6 +30,11 @@ class Res2DMaxPoolModule(nn.Module):
 
 
 class ResFrontEnd(nn.Module):
+    """
+    Adapted from Minz Won ResNet implementation.
+    
+    Original code: https://github.com/minzwon/semi-supervised-music-tagging-transformer/blob/master/src/modules.py
+    """
     def __init__(self, in_channels, out_channels, freq_pooling, time_pooling):
         super(ResFrontEnd, self).__init__()
         self.input_bn = nn.BatchNorm2d(in_channels)

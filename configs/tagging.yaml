@@ -5,7 +5,7 @@ datamodule:
   sample_rate: 22050
   input_length: 4.54
   batch_size: 2
-  n_workers: 2
+  n_workers: 4
   pin_memory: false
 
 features:
@@ -40,12 +40,13 @@ net:
 
 model:
   _target_: models.tagging.MusicTagger
+  activation_fn: sigmoid
 
 trainer:
   _target_: pytorch_lightning.Trainer
   fast_dev_run: false  # for debugging
-  gpus:
-    - 0
+  # gpus:
+  #   - 0
   precision: 32
   accumulate_grad_batches: 1
   check_val_every_n_epoch: 10
@@ -86,7 +87,7 @@ logger:
 
 hydra:
   run:
-    dir: runs/opensource/tagging/${experiment}
+    dir: runs/tagging/${experiment}
 
 ignore_warning: True
 seed: 42

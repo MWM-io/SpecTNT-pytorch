@@ -17,7 +17,7 @@ features:
   n_harmonic: 6
   semitone_scale: 2
   learn_bw: "only_Q"
-  # checkpoint: "/home/pierrecournut/code/projects/beat-estimation-spectnt/weights/harmonicstft.pth"
+  # checkpoint: ""
 
 fe_model:
   _target_: networks.ResFrontEnd
@@ -45,12 +45,13 @@ net:
 
 model:
   _target_: models.beats.BeatEstimator
+  activation_fn: softmax
 
 trainer:
   _target_: pytorch_lightning.Trainer
   fast_dev_run: false  # for debugging
-  gpus:
-    - 0
+  # gpus:
+  #   - 0
   precision: 32
   accumulate_grad_batches: 16
   check_val_every_n_epoch: 5
@@ -91,7 +92,7 @@ logger:
 
 hydra:
   run:
-    dir: runs/opensource/beats/${experiment}
+    dir: runs/beats/${experiment}
 
 ignore_warning: True
 seed: 42
