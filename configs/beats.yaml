@@ -1,0 +1,98 @@
+experiment: baseline
+
+datamodule:
+  _target_: datasets.beats.DummyBeatDataModule
+  batch_size: 2
+  n_workers: 4
+  pin_memory: False
+  sample_rate: 16000
+  input_length: 5
+  hop_length: 256
+  time_shrinking: 4
+
+features:
+  _target_: harmonicstft.HarmonicSTFT
+  sample_rate: 16000
+  n_fft: 512
+  n_harmonic: 6
+  semitone_scale: 2
+  learn_bw: "only_Q"
+  # checkpoint: ""
+
+fe_model:
+  _target_: networks.ResFrontEnd
+  in_channels: 6
+  out_channels: 256
+  freq_pooling: [2, 2, 2]
+  time_pooling: [2, 2, 1]
+
+net:
+  _target_: networks.SpecTNT
+  n_channels: 256
+  n_frequencies: 16
+  n_times: 78
+  embed_dim: 128
+  spectral_dmodel: 64
+  spectral_nheads: 4
+  spectral_dimff: 64
+  temporal_dmodel: 256
+  temporal_nheads: 8
+  temporal_dimff: 256
+  n_blocks: 5
+  dropout: 0.15
+  use_tct: false
+  n_classes: 3
+
+model:
+  _target_: models.beats.BeatEstimator
+  activation_fn: softmax
+
+trainer:
+  _target_: pytorch_lightning.Trainer
+  fast_dev_run: false  # for debugging
+  # gpus:
+  #   - 0
+  precision: 32
+  accumulate_grad_batches: 16
+  check_val_every_n_epoch: 5
+  max_steps: 1000000
+
+criterion:
+  _target_: torch.nn.CrossEntropyLoss
+  weight: null
+
+callbacks:
+  lr_monitor:
+    _target_: pytorch_lightning.callbacks.LearningRateMonitor
+    logging_interval: epoch
+
+optim:
+  _target_: torch.optim.AdamW
+  betas:
+    - 0.9
+    - 0.999
+  lr: 0.0005
+  weight_decay: 0.005
+
+model_checkpoint:
+  _target_: pytorch_lightning.callbacks.ModelCheckpoint
+  dirpath: checkpoints/
+  filename: "{best_epoch:02d}"
+  monitor: val_loss
+  mode: min
+  save_last: true
+  save_top_k: 1
+  verbose: true
+
+logger:
+  _target_: pytorch_lightning.loggers.tensorboard.TensorBoardLogger
+  name: ""
+  save_dir: ${now:%Y-%m-%d}_${now:%H-%M-%S}/tensorboard/
+  default_hp_metric: false
+
+hydra:
+  run:
+    dir: runs/beats/${experiment}
+
+ignore_warning: True
+seed: 42
