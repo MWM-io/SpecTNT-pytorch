@@ -4,14 +4,15 @@ from .base import BaseModel
 
 
 class MusicTagger(BaseModel):
-    def __init__(self, feature_extractor, net, optimizer, lr_scheduler, criterion, datamodule):
+    def __init__(self, feature_extractor, net, optimizer, lr_scheduler, criterion, datamodule, activation_fn):
         super().__init__(
             feature_extractor,
             net,
             optimizer, 
             lr_scheduler,
             criterion,
-            datamodule
+            datamodule,
+            activation_fn
         )
 
     def training_step(self, batch, batch_idx):
@@ -39,7 +40,7 @@ class MusicTagger(BaseModel):
             with th.no_grad():
                 features = self.feature_extractor(audio_batch)
                 logits = self.net(features)
-                probs = th.sigmoid(logits)
+                probs = self.activation(logits)
                 logits_list = th.cat([logits_list, logits.cpu()], dim=0)
                 probs_list = th.cat([probs_list, probs.cpu()], dim=0)
         # Aggregate along track and then compute metrics

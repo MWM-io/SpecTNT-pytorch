@@ -45,6 +45,7 @@ net:
 
 model:
   _target_: models.beats.BeatEstimator
+  activation_fn: softmax
 
 trainer:
   _target_: pytorch_lightning.Trainer

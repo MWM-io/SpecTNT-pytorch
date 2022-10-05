@@ -3,14 +3,15 @@ import torch as th
 from .base import BaseModel
 
 class BeatEstimator(BaseModel):
-    def __init__(self, feature_extractor, net, optimizer, lr_scheduler, criterion, datamodule):
+    def __init__(self, feature_extractor, net, optimizer, lr_scheduler, criterion, datamodule, activation_fn):
         super().__init__(
             feature_extractor,
             net,
             optimizer,
             lr_scheduler,
             criterion,
-            datamodule
+            datamodule,
+            activation_fn
         )
         
         self.target_fps = datamodule.sample_rate / \
@@ -47,7 +48,7 @@ class BeatEstimator(BaseModel):
             with th.no_grad():
                 features = self.feature_extractor(batch_audio)
                 logits = self.net(features)
-                probs = th.softmax(logits, dim=2)
+                probs = self.activation(logits)
                 logits_list = th.cat(
                     [logits_list, logits.flatten(end_dim=1).cpu()], dim=0)
                 probs_list = th.cat(

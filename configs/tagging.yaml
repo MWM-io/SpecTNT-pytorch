@@ -40,6 +40,7 @@ net:
 
 model:
   _target_: models.tagging.MusicTagger
+  activation_fn: sigmoid
 
 trainer:
   _target_: pytorch_lightning.Trainer
