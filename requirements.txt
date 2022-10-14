@@ -1,7 +1,7 @@
 pytorch_lightning==1.5.10
 omegaconf==2.1.1
 torch==1.11.0
-numpy==1.17.4
+numpy>=1.22
 librosa==0.8.1
 hydra_core==1.1.2
 mir_eval==0.6
